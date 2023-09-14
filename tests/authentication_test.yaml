@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Testing
+values: 
+  - values/values_min.yaml
+  - values/values_auth.yaml  
+tests:
+
+  - it: should success when required values are propvided
+    asserts:
+      - notFailedTemplate: {}
+
+
+  - it: set authentication on KafkaConnect spec
+    templates:
+      - templates/dbz-connect.yml
+    asserts:
+      - equal:
+          path: spec.authentication.type
+          value: scram-sha-512
+      - equal: 
+          path: spec.authentication.username
+          value: johndoe
+      - equal: 
+          path: spec.authentication.passwordSecret.secretName
+          value: debezium-connect-credential
+      - equal: 
+          path: spec.authentication.passwordSecret.password
+          value: password
+
+
+  - it: set credentials on secret 
+    templates:
+      - templates/dbz-secret-auth.yml
+    asserts:
+      - containsDocument:
+          kind: Secret
+          apiVersion: v1
+          name: debezium-connect-credential
+      - equal:
+          path: stringData.password
+          value: password
+      
+
+  - it: exclude render template of Role and RoleBinding
+    templates:
+      - templates/dbz-role.yml
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+# According to the documetion, this test should pass, but fails.
+suite: Testing
+templates:
+  - templates/dbz-connect.yaml
+  - templates/dbz-connector.yaml
+tests:
+  - it: should fail when no values provided
+    asserts:
+      - failedTemplate:
+          errorMessage: |
+            values don't meet the specifications of the schema(s) in the following chart(s):
+            debezium-connector:
+            - connect: version is required
+            - connect.name: Invalid type. Expected: string, given: null
+            - connect.image: Invalid type. Expected: string, given: null
+            - connect.configPrefix: Invalid type. Expected: string, given: null
+            - connect.bootstrapServers: Array must have at least 1 items
+            - connector.enabled: Invalid type. Expected: boolean, given: null
+            - connector.name: Invalid type. Expected: string, given: null
+            - connector.class: Invalid type. Expected: string, given: null

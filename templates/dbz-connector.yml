@@ -1,0 +1,21 @@
+{{ if .Values.connector.enabled }}
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  labels:
+    strimzi.io/cluster: '{{ include "debezium-connect.resourcePrefix" . }}{{ .Values.connect.name }}'
+    {{- include "debezium-connect.labels" . | nindent 4 }}
+  name: '{{ include "debezium-connect.resourcePrefix" . }}{{ .Values.connector.name }}'
+spec:
+  class: {{ .Values.connector.class }}
+  tasksMax: {{ .Values.connector.tasksMax }}
+  config:
+    {{- range $key, $val := (include "debezium-connect.connectorConfig" . | fromYaml) }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- range $group, $groupConfig := .Values.connector.topic_groups }}
+    {{- range $key, $val := $groupConfig }}
+    topic.creation.{{ $group }}.{{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- end }}
+{{ end }}

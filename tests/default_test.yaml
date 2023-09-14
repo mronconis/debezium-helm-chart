@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Testing
+values: 
+  - values/values_min.yaml
+tests:
+  - it: should success when required values are propvided
+    asserts:
+      - notFailedTemplate: {}
+
+
+  - it: should produce a KafkaConnect
+    templates:
+      - templates/dbz-connect.yml
+    asserts:
+      - isKind:
+          of: KafkaConnect
+      - equal:
+          path: metadata.annotations["strimzi.io/use-connector-resources"]
+          value: 'true'
+      - equal:
+          path: spec.image
+          value: com.acme/my-connect-image
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.version
+          value: 1.0.0
+      - equal:
+          path: spec.bootstrapServers
+          value: broker0:9092,broker1:9092
+      
+
+  - it: should enable file and secret provider 
+    templates:   
+      - templates/dbz-connect.yml
+    asserts:
+      - equal: 
+          path: spec.config["config.providers"]
+          value: file,secrets
+      - equal:
+          path: spec.config["config.providers.file.class"]
+          value: org.apache.kafka.common.config.provider.FileConfigProvider
+        
+      - equal:
+          path: spec.config["config.providers.secrets.class"]
+          value: io.strimzi.kafka.KubernetesSecretConfigProvider
+
+
+  - it: should configure specific connect topics and groupid 
+    templates:   
+      - templates/dbz-connect.yml      
+    asserts:
+      - equal:
+          path: spec.config["group.id"]
+          value: my-connect-connect-cluster
+      
+      - equal:
+          path: spec.config["offset.storage.topic"]
+          value: my-connect.connect.cluster-offsets
+          
+      - equal:
+          path: spec.config["config.storage.topic"]
+          value: my-connect.connect.cluster-configs
+          
+      - equal:
+          path: spec.config["status.storage.topic"]
+          value: my-connect.connect.cluster-status
+
+
+  - it: should enable metrics
+    templates:
+      - templates/dbz-connect.yml  
+    asserts:
+      - equal:
+          path: spec.template.pod.metadata.annotations["prometheus.io/scrape"]
+          value: 'true'
+      - equal:
+          path: spec.template.pod.metadata.annotations["prometheus.io/port"]
+          value: '9404'
+      - equal:
+          path: spec.template.pod.metadata.annotations["prometheus.io/path"]
+          value: '/metrics'
+
+
+  - it: allow to specify hostaliases
+    templates:
+      - templates/dbz-connect.yml
+    set:
+      connect:
+        hostAliases:
+          - ip: 10.0.0.1
+            hostnames: 
+            - domain.acme.com
+    asserts:
+      - equal:
+          path: spec.template.pod.hostAliases[0].ip
+          value: 10.0.0.1
+      - equal:
+          path: spec.template.pod.hostAliases[0].hostnames[0]
+          value: domain.acme.com
+
+
+  - it: should has tls CA
+    templates:
+      - templates/dbz-connect.yml
+    asserts:
+      - matchRegex:
+          path: spec.tls.trustedCertificates[0].secretName
+          pattern: -tls-ca[0-1]$
+      - matchRegex:
+          path: spec.tls.trustedCertificates[0].certificate
+          pattern: .crt$   
+
+
+  - it: should produce a KafkaConnector
+    templates:
+      - templates/dbz-connector.yml      
+    asserts:
+      - isKind:
+          of: KafkaConnector
+      - matchRegex:
+          path: metadata.name
+          pattern: -connector$
+      - matchRegex:
+          path: spec.class
+          pattern: ^com.example.connector.MyConnector
+
+
+  - it: set authentication on KafkaConnect spec
+    templates:
+      - templates/dbz-connect.yml
+    set:
+      connect:
+        authentication: 
+    asserts:
+      - notExists:
+          path: spec.authentication.type
+      - notExists: 
+          path: spec.authentication.username
+      - notExists: 
+          path: spec.authentication.passwordSecret.secretName
+      - notExists: 
+          path: spec.authentication.passwordSecret.password
+
+      

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Testing
+values: 
+  - values/values_min.yaml
+tests:
+  - it: should produce a KafkaConnector config mongodb
+    templates:
+      - templates/dbz-connector.yml
+    set:
+      connector:
+        class: io.debezium.connector.mongodb.MongoDbConnector
+    asserts:
+      - equal:
+          path: spec.config["mongodb.name"]
+          value: my-connect
+      - exists:
+          path: spec.config["mongodb.user"]
+      - exists:
+          path: spec.config["mongodb.password"]
+
+  - it: should produce a KafkaConnector config not mongodb
+    templates:
+      - templates/dbz-connector.yml
+    set:
+      connector:
+        class: io.debezium.connector.sqlserver.SqlServerConnector
+    asserts:
+      - exists:
+          path: spec.config["database.user"]
+      - exists:
+          path: spec.config["database.password"]
+      
+  - it: should produce a KafkaConnector topic config
+    templates:
+      - templates/dbz-connector.yml
+    set:
+      connector:
+        topic_groups:
+          default:
+            replication.factor: 3
+            partitions: 3
+            cleanup.policy: delete
+            retention.ms: '60480000'
+    asserts:
+      - equal:
+          path: spec.config["topic.creation.default.cleanup.policy"]
+          value: "delete"
+      - equal:
+          path: spec.config["topic.creation.default.partitions"]
+          value: "3"
+      - equal:
+          path: spec.config["topic.creation.default.replication.factor"]
+          value: "3"
+      - equal:
+          path: spec.config["topic.creation.default.retention.ms"]
+          value: "60480000"
+

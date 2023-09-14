@@ -1,0 +1,129 @@
+# (optional) Add name prefix to all resources provided by chart
+resourcePrefix: ''
+
+# Disable role and rolebinding for jenkins pipeline
+features:
+  role:
+    enabled: false
+    
+connect:
+  # Connect cluster name
+  name: debezium-kafka-connect-cluster
+
+  # Connect cluster image
+  image: <registry>/<namespace>/debezium-connector-oracle:3.0.8
+
+  # Connect cluster version
+  version: 3.5.0
+
+  # Connect cluster istances
+  replicas: 1
+
+  # Connect cluster annotations
+  annotations:
+    ap-code: TBD
+    ap-name: TBD
+    pk-code: TBD
+    pk-name: TBD
+    dto.account.l3: TBD
+    pm.tecnico/referente.progetto: TBD
+
+  # Connect cluster labels
+  labels:
+    ap-code: TBD
+    ap-name: TBD
+    pk-code: TBD
+    pk-name: TBD
+
+  # Topic and group.id prefix
+  configPrefix: cdc.debezium.acme
+
+  # Kafka cluster bootstrap servers
+  bootstrapServers: 
+    - <bootstrap_server1>
+
+  # Kafka cluster CA certificates
+  tls:
+    trustedCertificates:
+      - name: ca1
+        ca: |
+          -----BEGIN CERTIFICATE-----
+          CERTIFICATE
+          -----END CERTIFICATE-----
+
+  # Kafka cluster authentication
+  authentication: 
+    username: <kafka_user>
+    password: <kafka_pwd>
+
+  # Connect cluster default resources
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # Connect cluster default logging
+  logging:
+    loggers:
+      connect.root.logger.level: "INFO"
+
+  # Connect cluster image pull secrets
+  imagePullSecrets:
+    - <image_pull_secret>
+
+connector:
+  # Enable connector
+  enabled: true
+
+  # Connector name
+  name: debezium-oracle-connector
+
+  # Connector class
+  class: io.debezium.connector.oracle.OracleConnector
+
+  # Connector max tasks
+  tasksMax: 1
+
+  # Database credentials
+  database:
+    user: <db_user>
+    password: <db_pwd>
+    
+  # Connector configs
+  config:
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: 'false'
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: 'false'
+
+    # For details see. https://docs.redhat.com/en/documentation/red_hat_build_of_debezium/2.5.4/html/debezium_user_guide/debezium-connector-for-oracle#descriptions-of-debezium-oracle-connector-configuration-properties
+
+    database.include.list: <db_name_list>
+    database.dbname: <db_name>
+    database.hostname: <db_hostname>
+    database.port: <db_port>
+    database.sslmode": <db_sslmode>
+    table.include.list: <schema>.<table>,<schema>.CDC_DBZ_HEARTBEAT,<schema>.CDC_DBZ_SIGNAL
+    field.exclude.list: <schema>.<table>.<field>
+    schema.whitelist: <schema>
+    signal.data.collection: <schema>.CDC_DBZ_SIGNAL
+
+    heartbeat.interval.ms: 300000
+    heartbeat.action.query: UPDATE <schema>.CDC_DBZ_HEARTBEAT SET ACTION_DATE=sysdate 
+    schema.history.internal.store.only.captured.tables.ddl: true
+
+    log.mining.archive.destination.name: <LOG_ARCHIVE_DEST_NAME>
+    log.mining.transaction.retention.hours: 23
+    log.mining.archive.log.hours: 23
+
+  
+  # Topic creation configs
+  topic_groups:
+    default:
+      partitions: 5
+      replication.factor: '3'
+      retention.ms: '604800000'
+      cleanup.policy: delete

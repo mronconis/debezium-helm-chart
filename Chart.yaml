@@ -1,0 +1,7 @@
+apiVersion: v2
+name: debezium-helm
+description: A Helm chart for Kubernetes to deploy Debezium Connector as Strimzi Custom Resources
+type: application
+version: 1.0.0
+appVersion: "3.0.8"
+icon: https://avatars.githubusercontent.com/u/11964329?v=4

@@ -1,0 +1,97 @@
+# Feature flags (all enabled by default)
+features:
+  role:
+    enabled: true
+  secret:
+    enabled: true
+
+# Add name prefix to all resources provided by chart
+resourcePrefix: ''
+
+test:
+  enabled: true
+  image: <registry>/<namespace>/<image>:<tag>
+
+connect:
+  # Connect cluster name
+  name: my-connect
+  
+  # Connect cluster image (optional)
+  #image: <registry>/<namespace>/<image>:<tag>
+
+  # Connect cluster version
+  version: 1.0.0
+
+  # Connect cluster istances
+  replicas: 1
+
+  # Connect cluster annotations (optional)
+  annotations: {}
+
+  # Connect cluster labels (optional)
+  labels: {}
+
+  # Topic and group.id prefix
+  configPrefix: cdc.debezium.acme
+
+  # Kafka cluster bootstrap servers
+  bootstrapServers:
+  - kafka:9092
+
+  # Kafka cluster CA certificates (optional)
+  tls: {}
+  #tls:
+  #  trustedCertificates:
+  #    - name: ca1
+  #      ca: |
+  #        -----BEGIN CERTIFICATE-----
+  #        CERTIFICATE
+  #        -----END CERTIFICATE-----
+
+  # Kafka cluster authentication (optional)
+  authentication: {}
+  #authentication:
+  #  type: scram-sha-512
+  #  username: johndoe
+
+  # Connect cluster default resources
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  
+  # Connect cluster default logging
+  logging:
+    loggers:
+      connect.root.logger.level: "INFO"
+
+  # Connect cluster image pull secrets
+  imagePullSecrets: []
+
+  # Build connect image (optional)
+  build: {}
+
+connector:
+  # Enable connector
+  enabled: true
+ 
+  # Connector name
+  name: my-connector
+
+  # Connector class
+  class: org.acme.connector.MyConnector
+
+  # Connector max tasks
+  tasksMax: 1
+
+  # Database credentials
+  database: {}
+
+  # Connector configs
+  config: {}
+  
+  # Topic creation configs
+  topic_groups: {}

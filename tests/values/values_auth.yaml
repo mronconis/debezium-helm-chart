@@ -1,0 +1,12 @@
+
+features:
+  role:
+    enabled: false
+  secret:
+    enabled: true
+
+connect:
+  authentication:
+    type: scram-sha-512
+    username: johndoe
+    password: password

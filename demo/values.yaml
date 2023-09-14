@@ -1,0 +1,101 @@
+test:
+  enabled: false
+
+connect:
+  # Connect cluster name
+  name: debezium-kafka-connect-cluster
+
+  # Connect cluster version
+  version: 4.0.0
+
+  # Connect cluster istances
+  replicas: 1
+
+  # Connect cluster annotations
+  annotations:
+    app: cdc-debezium
+
+  # Connect cluster labels
+  labels:
+    app: cdc-debezium
+
+  # Topic and group.id prefix
+  configPrefix: cdc.debezium.mongodb
+
+  # Kafka cluster bootstrap servers
+  bootstrapServers: 
+    - strimzi-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+
+  # Connect cluster default resources
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # Connect cluster default logging
+  logging:
+    loggers:
+      connect.root.logger.level: "INFO"
+
+  # Connect cluster image pull secrets
+  imagePullSecrets: []
+
+  # Build connect image
+  build:
+    output:
+      type: docker
+      image: ttl.sh/debezium-connector-mongodb:24h
+    plugins:
+      - name: debezium-connector-mongodb
+        artifacts:
+          - type: zip 
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/3.1.2.Final/debezium-connector-mongodb-3.1.2.Final-plugin.zip   
+          - type: zip
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-scripting/3.1.2.Final/debezium-scripting-3.1.2.Final.zip 
+          - type: jar
+            url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy/3.0.11/groovy-3.0.11.jar  
+          - type: jar
+            url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy-jsr223/3.0.11/groovy-jsr223-3.0.11.jar
+          - type: jar
+            url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy-json/3.0.11/groovy-json-3.0.11.jar
+connector:
+  # Enable connector
+  enabled: true
+
+  # Connector name
+  name: debezium-mongodb-connector
+
+  # Connector class
+  class: io.debezium.connector.mongodb.MongoDbConnector
+
+  # Connector max tasks
+  tasksMax: 1
+
+  # Database credentials
+  database:
+    user: admin
+    password: admin123
+
+  # Connector configs
+  config:
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: 'false'
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: 'false'
+
+    # For details see. https://docs.redhat.com/en/documentation/red_hat_build_of_debezium/2.5.4/html/debezium_user_guide/debezium-connector-for-mongodb#mongodb-connector-properties
+    mongodb.authsource: admin
+    database.include.list: inventory
+    database.dbname: inventory
+    collection.include.list: "inventory.fooevent"
+  
+  # Topic creation configs
+  topic_groups:
+    default:
+      partitions: 5
+      replication.factor: '1'
+      retention.ms: '604800000'
+      cleanup.policy: delete

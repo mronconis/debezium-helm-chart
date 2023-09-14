@@ -1,0 +1,34 @@
+
+features:
+  role:
+    enabled: false
+  secret:
+    enabled: false
+
+connect:
+
+  name: my-connect
+
+  image: com.acme/my-connect-image
+
+  version: 1.0.0
+
+  configPrefix: my-connect
+
+  tls:
+    trustedCertificates:
+      - name: ca1
+        ca: |
+          tbd
+
+  bootstrapServers:
+    - broker0:9092
+    - broker1:9092
+
+connector:
+
+  enabled: True
+
+  name: my-connector
+
+  class: com.example.connector.MyConnector

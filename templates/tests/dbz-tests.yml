@@ -1,0 +1,45 @@
+
+{{- if .Values.test.enabled }}
+# https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.5/html/using_amq_streams_on_rhel/assembly-kafka-connect-str#using_the_kafka_connect_rest_api_to_manage_connectors
+apiVersion: v1
+kind: Pod
+metadata:
+  name: '{{ include "debezium-connect.resourcePrefix" . }}debezium-test-connect'
+  labels:
+    {{- include "debezium-connect.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: debezium-test
+      image: {{ .Values.test.image }}
+      imagePullPolicy: Always
+      command: ["sh", "-c"]
+      args:
+      - |
+        RESULT=$(curl -H "Accept: application/json" {{ include "debezium-connect.resourcePrefix" . }}{{ .Values.connect.name }}-connect-api.{{ .Release.Namespace }}.svc.cluster.local:8083 | jq -e 'has("version") and has("commit") and has("kafka_cluster_id")')
+        [ "$RESULT" = "true" ] && exit 0 || exit 1
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: '{{ include "debezium-connect.resourcePrefix" . }}debezium-test-connector-status'
+  labels:
+    {{- include "debezium-connect.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: debezium-test
+      image: {{ .Values.test.image }}
+      imagePullPolicy: Always
+      command: ["sh", "-c"]
+      args:
+      - |
+        RESULT=$(curl -H "Accept: application/json" {{ include "debezium-connect.resourcePrefix" . }}{{ .Values.connect.name }}-connect-api.{{ .Release.Namespace }}.svc.cluster.local:8083/connectors/{{ include "debezium-connect.resourcePrefix" . }}{{ .Values.connector.name }}/status | jq -r '[.connector,.tasks[]] | any(.state == "RUNNING")')
+        [ "$RESULT" = "true" ] && exit 0 || exit 1
+  restartPolicy: Never
+{{- end }}
