@@ -1,0 +1,95 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: {{ .Values.connect.name }}
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+  labels:
+    {{- include "debezium-connect.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.connect.logging }}
+  logging:
+    type: {{ .Values.connect.logging.type | default "inline" }}
+    {{- if .Values.connect.logging.loggers }}
+    loggers:
+      {{- range $key, $val := .Values.connect.logging.loggers }}
+      {{ $key }}: {{ $val | quote }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  image: {{ .Values.connect.image }}
+  replicas: {{ .Values.connect.replicas }} 
+  
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        name: debezium-kafka-connect-metrics
+        key: metrics-config.yml
+
+  resources:
+    requests:
+      cpu: {{ .Values.connect.resources.requests.cpu }}
+      memory: {{ .Values.connect.resources.requests.memory }}
+    limits:
+      cpu: {{ .Values.connect.resources.limits.cpu }}
+      memory: {{ .Values.connect.resources.limits.memory }}
+
+  template:
+    pod:
+      {{- if .Values.connect.hostAliases }}
+      hostAliases:
+      {{- range .Values.connect.hostAliases }}
+      - ip: {{ .ip }}
+        hostnames:
+        {{- range .hostnames }}
+        - "{{ . | lower }}"
+        {{- end }}
+      {{- end }}
+      {{- end }}
+
+      imagePullSecrets: {{ .Values.connect.imagePullSecrets }}
+
+      {{- if or .Values.connect.annotations .Values.connect.labels }} 
+      metadata:
+        {{- if .Values.connect.annotations }}
+        annotations:
+          {{- range $key, $val := .Values.connect.annotations }}
+          {{ $key }}: {{ $val | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.connect.labels }}
+        labels:
+          {{- range $key, $val := .Values.connect.labels }}
+          {{ $key }}: {{ $val | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+
+  bootstrapServers: {{ include "debezium-connect.bootstrapServers" . }}
+
+  {{- if .Values.connect.tls }}
+  tls:
+    trustedCertificates:
+      - secretName: debezium-connect-tls-certs
+        certificate: ca.crt
+  {{- end }}
+  
+  {{- if .Values.connect.authentication }}
+  authentication:
+    type: scram-sha-512
+    username: {{ .Values.connect.authentication.username }}
+    passwordSecret:
+      secretName: debezium-connect-scram-credential
+      password: scram-sha-512-password
+  {{- end }}
+
+  config:
+    config.providers: file,secrets
+    config.providers.file.class: org.apache.kafka.common.config.provider.FileConfigProvider
+    config.providers.secrets.class: io.strimzi.kafka.KubernetesSecretConfigProvider
+    group.id: {{ .Values.connect.configPrefix }}-connect-cluster
+    offset.storage.topic: {{ .Values.connect.configPrefix }}.connect.cluster-offsets
+    config.storage.topic: {{ .Values.connect.configPrefix }}.connect.cluster-configs
+    status.storage.topic: {{ .Values.connect.configPrefix }}.connect.cluster-status

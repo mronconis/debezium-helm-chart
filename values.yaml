@@ -1,0 +1,42 @@
+connect:
+  name: debezium-kafka-connect-cluster
+  image: debezium-connector-mongodb:2.2.0-16_2.1.4.Final-redhat-00001
+  replicas: 1
+  # Use a uniq prefix for the Kafka cluster. 
+  # This prefix will be used for all Connect topis:
+  # i.e. 
+  #   <prefix>.connect.cluster-offsets
+  #   <prefix>.connect.cluster-configs
+  #   <prefix>.connect.cluster-status )
+  # configPrefix: PREFIX_FOR_ALL_CONNECT_TOPICS_ON_KAFKA 
+
+  resources:
+    requests:
+      memory: 1Gi
+    limits:
+      memory: 1Gi
+  
+  logging:
+    loggers:
+      connect.root.logger.level: "INFO"
+
+  imagePullSecrets:
+    - default-image-pull-secret
+
+connector:
+  name: debezium-mongodb-connector
+  class: io.debezium.connector.mongodb.MongoDbConnector
+  enabled: True
+
+  tasksMax: 1
+  
+  database:
+    user: foo
+    password: bar
+
+  topic_groups:
+    default:
+      replication.factor: 3
+      partitions: 3
+      cleanup.policy: "delete"
+      retention.ms: '604800000'
